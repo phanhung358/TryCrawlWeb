@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Web;
 using System.Web.Optimization;
@@ -13,6 +14,7 @@ namespace WebApplication1
     {
         void Application_Start(object sender, EventArgs e)
         {
+            Static.sConnectString = ConfigurationManager.AppSettings["ConnectDb"];
             // Code that runs on application startup
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);

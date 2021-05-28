@@ -75,3 +75,4 @@ C:\Users\ADMIN\source\repos\WebApplication1\WebApplication1\obj\Debug\WebApplica
 C:\Users\ADMIN\source\repos\WebApplication1\WebApplication1\bin\HtmlAgilityPack.dll
 C:\Users\ADMIN\source\repos\WebApplication1\WebApplication1\bin\HtmlAgilityPack.pdb
 C:\Users\ADMIN\source\repos\WebApplication1\WebApplication1\bin\HtmlAgilityPack.xml
+C:\Users\ADMIN\source\repos\WebApplication1\WebApplication1\bin\FITC.Web.Component.dll

@@ -1,4 +1,5 @@
-﻿using HtmlAgilityPack;
+﻿using FITC.Web.Component;
+using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -15,6 +16,8 @@ namespace WebApplication1
 {
     public partial class _Default : Page
     {
+        FITC_CDataBase db = new FITC_CDataBase(Static.GetConnect());
+        CacHamChung ham = new CacHamChung();
         protected void Page_Load(object sender, EventArgs e)
         {
             HtmlWeb htmlWeb = new HtmlWeb()
@@ -23,87 +26,78 @@ namespace WebApplication1
                 OverrideEncoding = Encoding.UTF8
             };
 
-            string sqlconnectStr = "Data Source=.;Initial Catalog=DuLieu;Persist Security Info=True;User ID=sa;Password=123";
-            SqlConnection connection = new SqlConnection(sqlconnectStr);
-
-            connection.Open();                      // Mở kết nối - hoặc  connection.OpenAsync(); nếu dùng async
-
-            SqlCommand cmd = new SqlCommand();
-            cmd.Connection = connection;
-            cmd.CommandText = "select * from TrangWeb";
-            var rd = cmd.ExecuteReader();
-            DataTable dsWeb = new DataTable();
-            if (rd.HasRows)
+            DataSet ds = db.GetDataSet("TrangWeb_SELECT");
+            if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
             {
-                while (rd.Read())
+                for (int i = 0; i < ds.Tables[0].Rows.Count; i++)
                 {
-                    dsWeb.Load(rd);
+                    DataRow row = ds.Tables[0].Rows[i];
+
+                    DataSet ds1 = db.GetDataSet("XPath_DanhSachBaiViet_SELECT", row["id"].ToString());
+                    if (ds1 != null && ds1.Tables.Count > 0 && ds1.Tables[0].Rows.Count > 0)
+                    {
+                        for (int j = 0; j < ds1.Tables[0].Rows.Count; j++)
+                        {
+                            DataRow row1 = ds1.Tables[0].Rows[j];
+
+                            int n = 1;
+                            while (true)
+                            {
+                                HtmlDocument html = htmlWeb.Load(row["Url"].ToString() + row["ChuyenMuc_Url"].ToString() + row["ChuyenMucCon_Url"].ToString() + "?p=" + (n++));
+                                var DanhSach = html.DocumentNode.SelectNodes(row1["DanhSach"].ToString()) != null ? html.DocumentNode.SelectNodes(row1["DanhSach"].ToString()).ToList() : null;
+                                if (DanhSach == null)
+                                    break;
+                                foreach (var item in DanhSach)
+                                {
+                                    var TieuDe = item.SelectSingleNode(row1["TieuDe"].ToString());
+                                    var TomTat = item.SelectSingleNode(row1["TomTat"].ToString());
+                                    var BaiViet_Url = item.SelectSingleNode(row1["BaiViet_Url"].ToString()).Attributes["href"].Value;
+
+                                    object[] obj = new object[5];
+                                    obj[0] = 0;
+                                    obj[1] = row1["TrangWeb_id"].ToString();
+                                    obj[2] = TieuDe != null ? TieuDe.InnerText : "";
+                                    obj[3] = TomTat != null ? TomTat.InnerText : "";
+                                    obj[4] = BaiViet_Url != null ? BaiViet_Url : "";
+                                    string sLoi = db.ExcuteSP("BaiViet_INSERT", obj);
+                                }
+                            }
+                        }
+                    }
+
+                    DataSet ds2 = db.GetDataSet("XPath_ChiTietBaiViet_SELECT", row["id"].ToString());
+
+                    DataSet ds3 = db.GetDataSet("BaiViet_SELECT");
+                    if (ds3 != null && ds3.Tables.Count > 0 && ds3.Tables[0].Rows.Count > 0)
+                    {
+                        for (int j = 0; j < ds3.Tables[0].Rows.Count; j++)
+                        {
+                            DataRow row3 = ds3.Tables[0].Rows[j];
+
+                            if (ds2 != null && ds2.Tables.Count > 0 && ds2.Tables[0].Rows.Count > 0)
+                            {
+                                DataRow row2 = ds2.Tables[0].Rows[0];
+
+                                HtmlDocument html = htmlWeb.Load(row3["BaiViet_Url"].ToString());
+                                var TieuDePhu = html.DocumentNode.SelectSingleNode(row2["TieuDePhu"].ToString());
+                                var NoiDung = html.DocumentNode.SelectSingleNode(row2["NoiDung"].ToString());
+                                var ThoiGian = html.DocumentNode.SelectSingleNode(row2["ThoiGian"].ToString());
+                                var TacGia = html.DocumentNode.SelectSingleNode(row2["TacGia"].ToString());
+
+                                object[] obj = new object[6];
+                                obj[0] = 0;
+                                obj[1] = row3["id"].ToString();
+                                obj[2] = TieuDePhu != null ? TieuDePhu.InnerText : "";
+                                obj[3] = NoiDung != null ? NoiDung.InnerHtml : "";
+                                obj[4] = TacGia != null ? TacGia.InnerText : "";
+                                obj[5] = ThoiGian != null ? ThoiGian.InnerText : "";
+                                string sLoi = db.ExcuteSP("BaiViet_UPDATE", obj);
+                            }
+                        }
+                    }
                 }
             }
-            //if (dsWeb != null && dsWeb.Rows.Count > 0)
-            //{
-            //    for (int i = 0; i < dsWeb.Rows.Count; i++)
-            //    {
-            //        DataRow row = dsWeb.Rows[i];
 
-            //        connection.Open();
-            //        SqlCommand cmd1 = new SqlCommand();
-            //        cmd1.Connection = connection;
-            //        cmd1.CommandText = "select * from XPath_DanhSachBaiViet where TrangWeb_id=@TrangWeb_id";
-            //        cmd1.Parameters.AddWithValue("@TrangWeb_id", row["id"].ToString());
-            //        var rd1 = cmd1.ExecuteReader();
-            //        DataTable dsXPath_DS = new DataTable();
-            //        if (rd1.HasRows)
-            //        {
-            //            while (rd1.Read())
-            //            {
-            //                dsXPath_DS.Load(rd1);
-            //            }
-            //        }
-            //        connection.Close();
-            //        if (dsXPath_DS != null && dsXPath_DS.Rows.Count > 0)
-            //        {
-            //            for (int j = 0; j < dsXPath_DS.Rows.Count; j++)
-            //            {
-            //                DataRow row1 = dsXPath_DS.Rows[j];
-            //                HtmlDocument html = htmlWeb.Load(row["Url"].ToString() + row["ChuyenMuc_Url"].ToString() + row["ChuyenMucCon_Url"].ToString());
-            //                var ds = html.DocumentNode.SelectNodes(row1["DanhSach"].ToString());
-            //                foreach (var item in ds)
-            //                {
-            //                    var TieuDe = item.SelectSingleNode(row1["TieuDe"].ToString());
-            //                    var TieuDePhu = item.SelectSingleNode(row1["TieuDePhu"].ToString());
-            //                    var TomTat = item.SelectSingleNode(row1["TomTat"].ToString());
-            //                    var BaiViet_Url = item.SelectSingleNode(row1["BaiViet_Url"].ToString()).Attributes["href"].Value;
-
-            //                    SqlCommand cmd3 = new SqlCommand();
-            //                    cmd3.Connection = connection;
-            //                    cmd3.CommandText = "insert into BaiViet(TieuDe, TomTat, BaiViet_Url) values(@TieuDe, @TomTat, @BaiViet_Url)";
-            //                    cmd3.Parameters.AddWithValue("@TieuDe", TieuDe.InnerText);
-            //                    cmd3.Parameters.AddWithValue("@TomTat", TomTat.InnerText);
-            //                    cmd3.Parameters.AddWithValue("@BaiViet_Url", BaiViet_Url);
-            //                    cmd3.ExecuteNonQuery();
-            //                }
-            //            }
-            //        }
-
-            //        connection.Open();
-            //        SqlCommand cmd2 = new SqlCommand();
-            //        cmd2.Connection = connection;
-            //        cmd2.CommandText = "select * from XPath_ChiTietBaiViet where TrangWeb_id=@TrangWeb_id";
-            //        cmd2.Parameters.AddWithValue("@TrangWeb_id", row["id"].ToString());
-            //        var rd2 = cmd2.ExecuteReader();
-            //        DataTable dsXPath_ChiTiet = new DataTable();
-            //        if (rd2.HasRows)
-            //        {
-            //            while (rd2.Read())
-            //            {
-            //                dsXPath_ChiTiet.Load(rd2);
-            //            }
-            //        }
-            //        connection.Close();
-            //    }
-            //}
-            
             try
             {
                 HtmlDocument html = htmlWeb.Load("https://baothuathienhue.vn/sen-trang-hue-hoi-sinh-o-ho-tinh-tam-a100343.html");
